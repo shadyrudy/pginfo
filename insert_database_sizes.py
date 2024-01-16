@@ -1,15 +1,15 @@
 import argparse
 import psycopg2
-from get_databases import get_databases
+from get_database_sizes import get_database_sizes
 
-def insert_databases_size(target_server, target_user, target_password, dba_user, dba_password):
+def insert_databases_size(target_server, target_username, target_password, dba_username, dba_password):
     # Get databases and their sizes from the target server
-    databases = get_databases(target_server, target_user, target_password)
+    databases = get_database_sizes(target_server, target_username, target_password)
 
     # Connect to the DBA001 server
     conn_dba = psycopg2.connect(
         host='DBA001',
-        user=dba_user,
+        user=dba_username,
         password=dba_password,
         dbname='dbaadmin'
     )

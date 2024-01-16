@@ -2,7 +2,7 @@ import argparse
 import psycopg2
 
 
-def get_databases(server_name, user, password, db_name='postgres'):
+def get_database_sizes(server_name, user, password, db_name='postgres'):
     try:
         conn = psycopg2.connect(
             host=server_name,
@@ -43,6 +43,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dbs = get_databases(args.server_name, args.username, args.password)
+    dbs = get_database_sizes(args.server_name, args.username, args.password)
     for db in dbs:
         print(db)
