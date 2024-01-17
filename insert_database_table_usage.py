@@ -1,31 +1,39 @@
 import argparse
 import psycopg2
 from get_database_table_usage import get_database_table_usage 
+from get_databases import get_databases
 
 def insert_database_table_usage(target_server, target_username, target_password, dba_username, dba_password):
-    # Get tables and their usage from the target server
-    table_usage = get_database_table_usage(target_server, target_username, target_password)
 
-    # Connect to the DBA001 server
-    conn_dba = psycopg2.connect(
-        host='DBA001',
-        user=dba_username,
-        password=dba_password,
-        dbname='dbaadmin'
-    )
-    cursor_dba = conn_dba.cursor()
+    # Get databases from the target server
+    databases = get_databases(target_server, target_username, target_password)
 
-    # Insert into dba.table_usage table
-    for database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched in table_usage:
-        cursor_dba.execute(
-            "INSERT INTO dba.table_usage (server_name, database_name, schema_name, table_name, sequential_scans, sequential_tuple_scans, index_scans, index_tuple_fetches, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
-            (target_server, database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched)
+    # Foreach database, get tables and their usage
+    for current_database in databases:
+
+        # Get tables and their usage from the target server for the current database
+        table_usage = get_database_table_usage(target_server, target_username, target_password, current_database)
+
+        # Connect to the DBA001 server
+        conn_dba = psycopg2.connect(
+            host='DBA001',
+            user=dba_username,
+            password=dba_password,
+            dbname='dbaadmin'
         )
+        cursor_dba = conn_dba.cursor()
 
-    # Commit changes and close connection
-    conn_dba.commit()
-    cursor_dba.close()
-    conn_dba.close()
+        # Insert into dba.table_usage table
+        for database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched in table_usage:
+            cursor_dba.execute(
+                "INSERT INTO dba.table_usage (server_name, database_name, schema_name, table_name, sequential_scans, sequential_tuple_scans, index_scans, index_tuple_fetches, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                (target_server, database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched)
+            )
+
+        # Commit changes and close connection
+        conn_dba.commit()
+        cursor_dba.close()
+        conn_dba.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Insert database sizes information into the DBAAdmin database.")

@@ -22,7 +22,7 @@ def get_databases(server_name, user, password, db_name='postgres'):
         return []
 
     finally:
-	    cursor.close()
+        cursor.close()
         conn.close()
 
 if __name__ == "__main__":
