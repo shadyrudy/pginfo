@@ -13,8 +13,9 @@ def get_database_table_sizes(server_name, user, password, db_name='postgres'):
         cursor = conn.cursor()
 
         query = """
-        SELECT  nspname AS schemaname,
-                relname AS tablename,
+        SELECT  current_database() as database_name,
+                nspname AS schema_name,
+                relname AS table_name,
                 pg_table_size(C.oid) AS table_size,
                 pg_indexes_size(C.oid) AS index_size,
                 pg_total_relation_size(C.oid) AS total_size,
