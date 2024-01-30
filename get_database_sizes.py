@@ -3,6 +3,21 @@ import psycopg2
 
 
 def get_database_sizes(server_name, user, password, db_name='postgres'):
+    """
+    Retrieves the sizes of all non-template databases on a PostgreSQL server.
+
+    Args:
+        server_name (str): The name or IP address of the PostgreSQL server.
+        user (str): The username to connect to the server.
+        password (str): The password to authenticate with the server.
+        db_name (str, optional): The name of the database to connect to. Defaults to 'postgres'.
+
+    Returns:
+        list: A list of tuples containing the database name, size in MB, and size in GB.
+
+    Raises:
+        Exception: If an error occurs while connecting to the server or executing the query.
+    """
     try:
         conn = psycopg2.connect(
             host=server_name,

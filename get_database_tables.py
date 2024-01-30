@@ -3,6 +3,22 @@ import psycopg2
 
 
 def get_database_tables(server_name, user, password, db_name='postgres'):
+    """
+    Retrieves a list of tables from a PostgreSQL database.
+
+    Args:
+        server_name (str): Name of the PostgreSQL server.
+        user (str): Username for the PostgreSQL server.
+        password (str): Password for the PostgreSQL server.
+        db_name (str, optional): Target database in the PostgreSQL server. Defaults to 'postgres'.
+
+    Returns:
+        list: A list of tuples representing the table schema and table name.
+
+    Raises:
+        Exception: If an error occurs while connecting to the database.
+
+    """
     try:
         conn = psycopg2.connect(
             host=server_name,
@@ -16,8 +32,7 @@ def get_database_tables(server_name, user, password, db_name='postgres'):
         SELECT t.table_schema, 
                 t.table_name
         FROM information_schema.tables as t
-        WHERE t.table_schema = 'public' -- Change schema name as needed
-        AND t.table_type = 'BASE TABLE'
+        WHERE t.table_type = 'BASE TABLE'
         AND t.table_schema not in ('pg_catalog', 'information_schema')
         ORDER BY t.table_schema, t.table_name;
         """

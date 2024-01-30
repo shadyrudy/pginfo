@@ -3,6 +3,29 @@ import psycopg2
 
 
 def get_database_table_usage(server_name, user, password, db_name='postgres'):
+    """
+    Retrieves the usage statistics for tables in a PostgreSQL database.
+
+    Args:
+        server_name (str): The name or IP address of the PostgreSQL server.
+        user (str): The username for connecting to the PostgreSQL server.
+        password (str): The password for connecting to the PostgreSQL server.
+        db_name (str, optional): The name of the database. Defaults to 'postgres'.
+
+    Returns:
+        list: A list of tuples containing the usage statistics for each table.
+              Each tuple contains the following information:
+              - database_name: The name of the database.
+              - schema_name: The name of the schema.
+              - table_name: The name of the table.
+              - sequential_scans: The number of sequential scans performed on the table.
+              - sequential_tuples_read: The number of tuples read during sequential scans.
+              - index_scans: The number of index scans performed on the table.
+              - index_tuples_fetched: The number of tuples fetched during index scans.
+
+    Raises:
+        Exception: If an error occurs while connecting to the PostgreSQL server or executing the query.
+    """
     try:
         conn = psycopg2.connect(
             host=server_name,
@@ -13,7 +36,7 @@ def get_database_table_usage(server_name, user, password, db_name='postgres'):
         cursor = conn.cursor()
 
         query = """
-        select current_database() as database_name,       
+        select  current_database() as database_name,
                 schemaname as schema_name,
                 relname as table_name,
                 seq_scan as sequential_scans,

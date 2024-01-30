@@ -3,6 +3,29 @@ import psycopg2
 
 
 def get_database_table_sizes(server_name, user, password, db_name='postgres'):
+    """
+    Retrieves the sizes of tables in a PostgreSQL database.
+
+    Args:
+        server_name (str): The name or IP address of the PostgreSQL server.
+        user (str): The username to connect to the server.
+        password (str): The password to authenticate the user.
+        db_name (str, optional): The name of the database. Defaults to 'postgres'.
+
+    Returns:
+        list: A list of tuples containing the following information for each table:
+            - database_name: The name of the database.
+            - schema_name: The name of the schema.
+            - table_name: The name of the table.
+            - table_size: The size of the table in bytes.
+            - index_size: The size of the table's indexes in bytes.
+            - total_size: The total size of the table including indexes in bytes.
+            - row_estimate: The estimated number of rows in the table.
+
+    Raises:
+        Exception: If an error occurs while connecting to the database or executing the query.
+
+    """
     try:
         conn = psycopg2.connect(
             host=server_name,

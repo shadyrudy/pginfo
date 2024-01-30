@@ -5,6 +5,20 @@ from get_databases import get_databases
 
 
 def insert_database_table_sizes(target_server, target_username, target_password, dba_username, dba_password):
+    """
+    Inserts the sizes of tables in the target PostgreSQL server into the DBAAdmin database.
+
+    Args:
+        target_server (str): Name of the target PostgreSQL server.
+        target_username (str): Username for the target PostgreSQL server.
+        target_password (str): Password for the target PostgreSQL server.
+        dba_username (str): Username for the DBA PostgreSQL server.
+        dba_password (str): Password for the DBA PostgreSQL server.
+
+    Raises:
+        Exception: An error occurred while connecting to the DBA database.
+
+    """
 
     # Get databases from the target server
     databases = get_databases(target_server, target_username, target_password)
@@ -46,4 +60,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    insert_database_table_sizes(args.target_server, args.target_username, args.target_password, args.dba_username, args.dba_password)
+    insert_database_table_sizes(args.target_server, args.target_username, args.target_password, args.dba_username,
+                                args.dba_password)

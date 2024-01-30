@@ -1,12 +1,12 @@
 import argparse
 import psycopg2
-from get_database_table_usage import get_database_table_usage
+from get_database_grants import get_database_grants 
 from get_databases import get_databases
 
 
-def insert_database_table_usage(target_server, target_username, target_password, dba_username, dba_password):
+def insert_database_grants(target_server, target_username, target_password, dba_username, dba_password):
     """
-    Inserts database table usage information into the DBAAdmin database.
+    Inserts database grant information into the DBAAdmin database.
 
     Args:
         target_server (str): Name of the target PostgreSQL server.
@@ -22,11 +22,11 @@ def insert_database_table_usage(target_server, target_username, target_password,
     # Get databases from the target server
     databases = get_databases(target_server, target_username, target_password)
 
-    # Foreach database, get tables and their usage
+    # Foreach database, get tables and their grant information
     for current_database in databases:
 
-        # Get tables and their usage from the target server for the current database
-        table_usage = get_database_table_usage(target_server, target_username, target_password, current_database)
+        # Get database grants for the current database
+        database_grants = get_database_grants(target_server, target_username, target_password, current_database)
 
         # Connect to the DBA001 server
         conn_dba = psycopg2.connect(
@@ -37,11 +37,11 @@ def insert_database_table_usage(target_server, target_username, target_password,
         )
         cursor_dba = conn_dba.cursor()
 
-        # Insert into dba.table_usage table
-        for database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched in table_usage:
+        # Insert into dba.grants table
+        for database_name, schema_name, object_name, object_type, grantor, grantee, privilege_type, is_grantable, with_hierarchy in database_grants:
             cursor_dba.execute(
-                "INSERT INTO dba.table_usage (server_name, database_name, schema_name, table_name, sequential_scans, sequential_tuple_scans, index_scans, index_tuple_fetches, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
-                (target_server, database_name, schema_name, table_name, sequential_scans, sequential_tuples_read, index_scans, index_tuples_fetched)
+                "INSERT INTO dba.grants (server_name, database_name, schema_name, object_name, object_type, grantor, grantee, privilege_type, is_grantable, with_hierarchy, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                (target_server, database_name, schema_name, object_name, object_type, grantor, grantee, privilege_type, is_grantable, with_hierarchy)
             )
 
         # Commit changes and close connection
@@ -59,4 +59,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    insert_database_table_usage(args.target_server, args.target_username, args.target_password, args.dba_username, args.dba_password)
+    insert_database_grants(args.target_server, args.target_username, args.target_password, args.dba_username, args.dba_password)

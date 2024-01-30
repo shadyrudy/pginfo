@@ -3,6 +3,25 @@ import psycopg2
 
 
 def get_databases(server_name, user, password, db_name='postgres'):
+    """
+    Get a list of databases from a PostgreSQL server.
+
+    Args:
+        server_name (str): Name of the PostgreSQL server.
+        user (str): Username for the PostgreSQL server.
+        password (str): Password for the PostgreSQL server.
+        db_name (str, optional): Name of the database to connect to. Defaults to 'postgres'.
+
+    Returns:
+        list: A list of database names.
+
+    Raises:
+        Exception: If an error occurs while connecting to the database.
+
+    """
+    conn = None  # Initialize connection outside try block
+    cursor = None  # Initialize cursor outside try block
+
     try:
         conn = psycopg2.connect(
             host=server_name,
@@ -22,14 +41,16 @@ def get_databases(server_name, user, password, db_name='postgres'):
         return []
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get a list of databases from a PostgreSQL server.")
-    parser.add_argument("server_name", help="Name of the PostgreSQL server")
-    parser.add_argument("username", help="Username for the PostgreSQL server")
-    parser.add_argument("password", help="Password for the PostgreSQL server")
+    parser.add_argument("server_name", help="Name of the PostgreSQL server.")
+    parser.add_argument("username", help="Username for the PostgreSQL server.")
+    parser.add_argument("password", help="Password for the PostgreSQL server.")
 
     args = parser.parse_args()
 
