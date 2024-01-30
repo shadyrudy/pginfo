@@ -17,10 +17,7 @@ def get_servers(dba_username, dba_password):
     try:
         # Connect to the DBA001 server
         conn_dba = psycopg2.connect(
-            host='DBA001',
-            user=dba_username,
-            password=dba_password,
-            dbname='dbaadmin'
+            host="DBA001", user=dba_username, password=dba_password, dbname="dbaadmin"
         )
         cursor = conn_dba.cursor()
 
@@ -39,7 +36,9 @@ def get_servers(dba_username, dba_password):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Get a list of databases from a PostgreSQL server.")
+    parser = argparse.ArgumentParser(
+        description="Get a list of databases from a PostgreSQL server."
+    )
     parser.add_argument("dba_username", help="Username for the DBA PostgreSQL server")
     parser.add_argument("dba_password", help="Password for the DBA PostgreSQL server")
 
