@@ -14,6 +14,9 @@ def get_servers(dba_username, dba_password):
         list: A list of active server names from the DBA database. These servers
         will be used for metrics collection
     """
+    conn_dba = None  # Initialize connection outside try block
+    cursor = None  # Initialize cursor outside try block
+
     try:
         # Connect to the DBA001 server
         conn_dba = psycopg2.connect(
