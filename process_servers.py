@@ -5,6 +5,7 @@ from insert_database_sizes import insert_database_sizes
 from insert_database_table_sizes import insert_database_table_sizes
 from insert_database_table_usage import insert_database_table_usage
 from insert_database_grants import insert_database_grants
+from insert_database_users import insert_database_users
 
 
 def process_servers(dba_username, dba_password):
@@ -13,6 +14,8 @@ def process_servers(dba_username, dba_password):
     First, get database sizes for all databases on the server.
     Next, get table sizes for all databases on the server.
     Next, get table usage for all databases on the server.
+    Next, get all users on the server.
+    Finally, get grants for all databases on the server.
 
     Args:
         dba_username (str): Username for the DBA PostgreSQL server.
@@ -50,11 +53,16 @@ def process_servers(dba_username, dba_password):
             server, current_username, current_password, dba_username, dba_password
         )
 
+        # Next, get all users on the server
+        insert_database_users(
+            server, current_username, current_password, dba_username, dba_password
+        )
+        print(f"    Finished with server: {server}")
+
         # Next, get grants for all databases on the server
         insert_database_grants(
             server, current_username, current_password, dba_username, dba_password
         )
-        print(f"    Finished with server: {server}")
 
 
 if __name__ == "__main__":

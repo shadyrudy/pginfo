@@ -26,3 +26,7 @@ Added script for grants
 Added script to process all servers.
 Added header comments.
 Formatted files to python standards.
+
+## 2024-02-07
+Added script for users at the server level.
+This includes rights, such as Super User, Create DB, etc.

@@ -21,7 +21,7 @@ def insert_database_users(
 
     # Connect to the DBA001 server
     conn_dba = psycopg2.connect(
-        host="ec2-54-188-102-105.us-west-2.compute.amazonaws.com",
+        host="DBA001",
         user=dba_username,
         password=dba_password,
         dbname="dbaadmin",
@@ -43,7 +43,7 @@ def insert_database_users(
         rolconfig,
     ) in database_users:
         cursor_dba.execute(
-            "INSERT INTO dba.users(server_name, rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolconnlimit, rolvaliduntil, memberof, rolconfig, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ARRAY%s, ARRAY%s, CURRENT_TIMESTAMP)",
+            "INSERT INTO dba.users(server_name, rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolconnlimit, rolvaliduntil, memberof, rolconfig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )",
             (
                 target_server,
                 rolname,
@@ -55,8 +55,8 @@ def insert_database_users(
                 rolreplication,
                 rolconnlimit,
                 rolvaliduntil,
-                (memberof,),
-                (rolconfig,),
+                memberof,
+                rolconfig,
             ),
         )
 
