@@ -1,5 +1,6 @@
 import argparse
 import psycopg2
+from send_mail import send_mail
 
 
 def get_database_tables(server_name, user, password, db_name="postgres"):
@@ -40,7 +41,19 @@ def get_database_tables(server_name, user, password, db_name="postgres"):
         return table_list
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        error_message = f"An error occurred: {e} in get_database_tables."
+        print(error_message)
+        try:
+            send_mail(
+                "Database Error",  # Subject of the email
+                error_message,  # Body of the email
+                "recipient@example.com",  # Recipient's email address
+                "your_email@example.com",  # Sender's email address
+                "your_password",  # Sender's email password (optional)
+            )
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
         return []
 
     finally:

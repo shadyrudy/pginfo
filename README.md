@@ -30,3 +30,7 @@ Formatted files to python standards.
 ## 2024-02-07
 Added script for users at the server level.
 This includes rights, such as Super User, Create DB, etc.
+
+## 2024-02-12
+Added script to send emails.
+Integrated send mail script into all python scripts. 
