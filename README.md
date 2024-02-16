@@ -30,3 +30,9 @@ Formatted files to python standards.
 ## 2024-02-07
 Added script for users at the server level.
 This includes rights, such as Super User, Create DB, etc.
+
+## 2024-02-16
+Added script to send emails.
+Added try catch block with email notification on failure
+Added script to import index information including size and definition. 
+Moved cursor and connection definition outside of the try catch. 

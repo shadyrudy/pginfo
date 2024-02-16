@@ -2,6 +2,7 @@ import argparse
 import psycopg2
 from get_database_table_sizes import get_database_table_sizes
 from get_databases import get_databases
+from send_mail import send_mail
 
 
 def insert_database_table_sizes(
@@ -22,50 +23,73 @@ def insert_database_table_sizes(
 
     """
 
-    # Get databases from the target server
-    databases = get_databases(target_server, target_username, target_password)
+    # Initialize connection and cursor
+    conn_dba = None
+    cursor_dba = None
 
-    # Foreach database, get tables and their usage
-    for current_database in databases:
-        # Get tables and their usage from the target server for the current database
-        table_sizes = get_database_table_sizes(
-            target_server, target_username, target_password, current_database
-        )
+    try:
 
-        # Connect to the DBA001 server
-        conn_dba = psycopg2.connect(
-            host="DBA001", user=dba_username, password=dba_password, dbname="dbaadmin"
-        )
-        cursor_dba = conn_dba.cursor()
+        # Get databases from the target server
+        databases = get_databases(target_server, target_username, target_password)
 
-        # Insert into dba.tables table
-        for (
-            database_name,
-            schema_name,
-            table_name,
-            table_size,
-            index_size,
-            total_size,
-            row_estimate,
-        ) in table_sizes:
-            cursor_dba.execute(
-                "INSERT INTO dba.tables (server_name, database_name, schema_name, table_name, table_size_bytes, index_size_bytes, total_size_bytes, row_count, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
-                (
-                    target_server,
-                    database_name,
-                    schema_name,
-                    table_name,
-                    table_size,
-                    index_size,
-                    total_size,
-                    row_estimate,
-                ),
+        # Foreach database, get tables and their usage
+        for current_database in databases:
+            # Get tables and their usage from the target server for the current database
+            table_sizes = get_database_table_sizes(
+                target_server, target_username, target_password, current_database
             )
 
+            # Connect to the DBA001 server
+            conn_dba = psycopg2.connect(
+                host="DBA001",
+                user=dba_username,
+                password=dba_password,
+                dbname="dbaadmin",
+            )
+            cursor_dba = conn_dba.cursor()
+
+            # Insert into dba.tables table
+            for (
+                database_name,
+                schema_name,
+                table_name,
+                table_size,
+                index_size,
+                total_size,
+                row_estimate,
+            ) in table_sizes:
+                cursor_dba.execute(
+                    "INSERT INTO dba.tables (server_name, database_name, schema_name, table_name, table_size_bytes, index_size_bytes, total_size_bytes, row_count, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                    (
+                        target_server,
+                        database_name,
+                        schema_name,
+                        table_name,
+                        table_size,
+                        index_size,
+                        total_size,
+                        row_estimate,
+                    ),
+                )
+
+    except Exception as e:
+        function_name = insert_database_table_sizes.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
+    finally:
         # Commit changes and close connection
-        conn_dba.commit()
-        cursor_dba.close()
-        conn_dba.close()
+        if cursor_dba is not None:
+            cursor_dba.close()
+        if conn_dba is not None:
+            conn_dba.commit()
+            conn_dba.close()
 
 
 if __name__ == "__main__":

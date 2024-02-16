@@ -1,5 +1,6 @@
 import argparse
 import psycopg2
+from send_mail import send_mail
 
 
 def get_databases(server_name, user, password, db_name="postgres"):
@@ -19,6 +20,8 @@ def get_databases(server_name, user, password, db_name="postgres"):
         Exception: If an error occurs while connecting to the database.
 
     """
+
+    # Initialize connection and cursor
     conn = None  # Initialize connection outside try block
     cursor = None  # Initialize cursor outside try block
 
@@ -28,13 +31,23 @@ def get_databases(server_name, user, password, db_name="postgres"):
         )
         cursor = conn.cursor()
 
+        # Get a list of non template databases
         cursor.execute("SELECT datname FROM pg_database WHERE datistemplate = false;")
         databases = [db[0] for db in cursor.fetchall()]
 
         return databases
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        function_name = get_databases.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
         return []
 
     finally:

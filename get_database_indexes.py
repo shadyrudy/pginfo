@@ -3,9 +3,9 @@ import psycopg2
 from send_mail import send_mail
 
 
-def get_database_tables(server_name, user, password, db_name="postgres"):
+def get_database_indexes(server_name, user, password, db_name="postgres"):
     """
-    Retrieves a list of tables from a PostgreSQL database.
+    Retrieves a list of indexes from a PostgreSQL database.
 
     Args:
         server_name (str): Name of the PostgreSQL server.
@@ -14,7 +14,7 @@ def get_database_tables(server_name, user, password, db_name="postgres"):
         db_name (str, optional): Target database in the PostgreSQL server. Defaults to 'postgres'.
 
     Returns:
-        list: A list of tuples representing the table schema and table name.
+        list: A list of tuples representing the indexes in the database, including the table name and the schema name.
 
     Raises:
         Exception: If an error occurs while connecting to the database.
@@ -32,21 +32,28 @@ def get_database_tables(server_name, user, password, db_name="postgres"):
         cursor = conn.cursor()
 
         query = """
-        SELECT t.table_schema, 
-                t.table_name
-        FROM information_schema.tables as t
-        WHERE t.table_type = 'BASE TABLE'
-        AND t.table_schema not in ('pg_catalog', 'information_schema')
-        ORDER BY t.table_schema, t.table_name;
+        SELECT current_database() as database_name,
+            n.nspname AS schema_name,
+            t.relname AS table_name,
+            i.relname AS index_name,
+            pg_relation_size(i.oid) AS index_size_bytes,
+            LEFT(pg_get_indexdef(i.oid), 255) AS index_definition
+        FROM pg_class t
+        JOIN pg_index x ON t.oid = x.indrelid
+        JOIN pg_class i ON i.oid = x.indexrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE t.relkind = 'r' AND i.relkind = 'i'
+        and  n.nspname NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY n.nspname, t.relname, i.relname;
         """
 
         cursor.execute(query)
-        table_list = cursor.fetchall()
+        index_list = cursor.fetchall()
 
-        return table_list
+        return index_list
 
     except Exception as e:
-        function_name = get_database_tables.__name__
+        function_name = get_database_indexes.__name__
         error_message = f"An error occurred in {function_name}. The error is  {e}"
         error_subject = f"Failure: {function_name}"
         error_recipients = "name@example.com"
@@ -67,7 +74,7 @@ def get_database_tables(server_name, user, password, db_name="postgres"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Get a list of databases from a PostgreSQL server."
+        description="Get a list of indexes in a databases from a PostgreSQL server."
     )
     parser.add_argument("server_name", help="Name of the PostgreSQL server")
     parser.add_argument(
@@ -78,8 +85,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    tables = get_database_tables(
+    indexes = get_database_indexes(
         args.server_name, args.username, args.password, args.database_name
     )
-    for table in tables:
-        print(table)
+    for idx in indexes:
+        print(idx)
