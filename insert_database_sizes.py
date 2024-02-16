@@ -1,6 +1,7 @@
 import argparse
 import psycopg2
 from get_database_sizes import get_database_sizes
+from send_mail import send_mail
 
 
 def insert_database_sizes(
@@ -16,26 +17,47 @@ def insert_database_sizes(
         dba_username (str): Username for the DBA PostgreSQL server.
         dba_password (str): Password for the DBA PostgreSQL server.
     """
-    # Get databases and their sizes from the target server
-    databases = get_database_sizes(target_server, target_username, target_password)
 
-    # Connect to the DBA001 server
-    conn_dba = psycopg2.connect(
-        host="DBA001", user=dba_username, password=dba_password, dbname="dbaadmin"
-    )
-    cursor_dba = conn_dba.cursor()
+    # Initialize connection and cursor
+    conn_dba = None
+    cursor_dba = None
 
-    # Insert into dba.database_sizes table
-    for db_name, size_mb, size_gb in databases:
-        cursor_dba.execute(
-            "INSERT INTO dba.databases (server_name, database_name, database_size_bytes, database_size, last_updated) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
-            (target_server, db_name, size_mb, size_gb),
+    try:
+
+        # Get databases and their sizes from the target server
+        databases = get_database_sizes(target_server, target_username, target_password)
+
+        # Connect to the DBA001 server
+        conn_dba = psycopg2.connect(
+            host="DBA001", user=dba_username, password=dba_password, dbname="dbaadmin"
         )
+        cursor_dba = conn_dba.cursor()
 
-    # Commit changes and close connection
-    conn_dba.commit()
-    cursor_dba.close()
-    conn_dba.close()
+        # Insert into dba.database_sizes table
+        for db_name, size_mb, size_gb in databases:
+            cursor_dba.execute(
+                "INSERT INTO dba.databases (server_name, database_name, database_size_bytes, database_size, last_updated) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                (target_server, db_name, size_mb, size_gb),
+            )
+
+    except Exception as e:
+        function_name = insert_database_sizes.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
+    finally:
+        # Commit changes and close connection
+        if cursor_dba is not None:
+            cursor_dba.close()
+        if conn_dba is not None:
+            conn_dba.commit()
+            conn_dba.close()
 
 
 if __name__ == "__main__":

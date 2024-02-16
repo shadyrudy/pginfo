@@ -1,5 +1,6 @@
 import argparse
 import psycopg2
+from send_mail import send_mail
 
 
 def get_database_users(server_name, user, password, db_name="postgres"):
@@ -31,8 +32,9 @@ def get_database_users(server_name, user, password, db_name="postgres"):
         Exception: If an error occurs while connecting to the database or executing the query.
     """
 
-    conn = None  # Initialize connection outside try block
-    cursor = None  # Initialize cursor outside try block
+    # Initialize connection and cursor
+    conn = None
+    cursor = None
 
     try:
         conn = psycopg2.connect(
@@ -64,7 +66,16 @@ def get_database_users(server_name, user, password, db_name="postgres"):
         return database_users
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        function_name = get_database_users.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
         return []
 
     finally:

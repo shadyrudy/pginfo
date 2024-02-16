@@ -1,6 +1,7 @@
 import argparse
 import psycopg2
 from get_database_users import get_database_users
+from send_mail import send_mail
 
 
 def insert_database_users(
@@ -16,54 +17,77 @@ def insert_database_users(
         dba_username (str): Username for the DBA PostgreSQL server.
         dba_password (str): Password for the DBA PostgreSQL server.
     """
-    # Get database users from the target server
-    database_users = get_database_users(target_server, target_username, target_password)
 
-    # Connect to the DBA001 server
-    conn_dba = psycopg2.connect(
-        host="DBA001",
-        user=dba_username,
-        password=dba_password,
-        dbname="dbaadmin",
-    )
-    cursor_dba = conn_dba.cursor()
+    # Initialize connection and cursor
+    conn_dba = None
+    cursor_dba = None
 
-    # Insert into dba.database_sizes table
-    for (
-        rolname,
-        rolsuper,
-        rolinherit,
-        rolcreaterole,
-        rolcreatedb,
-        rolcanlogin,
-        rolreplication,
-        rolconnlimit,
-        rolvaliduntil,
-        memberof,
-        rolconfig,
-    ) in database_users:
-        cursor_dba.execute(
-            "INSERT INTO dba.users(server_name, rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolconnlimit, rolvaliduntil, memberof, rolconfig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )",
-            (
-                target_server,
-                rolname,
-                rolsuper,
-                rolinherit,
-                rolcreaterole,
-                rolcreatedb,
-                rolcanlogin,
-                rolreplication,
-                rolconnlimit,
-                rolvaliduntil,
-                memberof,
-                rolconfig,
-            ),
+    try:
+
+        # Get database users from the target server
+        database_users = get_database_users(
+            target_server, target_username, target_password
         )
 
-    # Commit changes and close connection
-    conn_dba.commit()
-    cursor_dba.close()
-    conn_dba.close()
+        # Connect to the DBA001 server
+        conn_dba = psycopg2.connect(
+            host="DBA001",
+            user=dba_username,
+            password=dba_password,
+            dbname="dbaadmin",
+        )
+        cursor_dba = conn_dba.cursor()
+
+        # Insert into dba.database_sizes table
+        for (
+            rolname,
+            rolsuper,
+            rolinherit,
+            rolcreaterole,
+            rolcreatedb,
+            rolcanlogin,
+            rolreplication,
+            rolconnlimit,
+            rolvaliduntil,
+            memberof,
+            rolconfig,
+        ) in database_users:
+            cursor_dba.execute(
+                "INSERT INTO dba.users(server_name, rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolconnlimit, rolvaliduntil, memberof, rolconfig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )",
+                (
+                    target_server,
+                    rolname,
+                    rolsuper,
+                    rolinherit,
+                    rolcreaterole,
+                    rolcreatedb,
+                    rolcanlogin,
+                    rolreplication,
+                    rolconnlimit,
+                    rolvaliduntil,
+                    memberof,
+                    rolconfig,
+                ),
+            )
+
+    except Exception as e:
+        function_name = insert_database_users.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
+    finally:
+        # Commit changes and close connection
+        if cursor_dba is not None:
+            cursor_dba.close()
+        if conn_dba is not None:
+            conn_dba.commit()
+            conn_dba.close()
 
 
 if __name__ == "__main__":

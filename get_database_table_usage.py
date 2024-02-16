@@ -1,5 +1,6 @@
 import argparse
 import psycopg2
+from send_mail import send_mail
 
 
 def get_database_table_usage(server_name, user, password, db_name="postgres"):
@@ -26,6 +27,11 @@ def get_database_table_usage(server_name, user, password, db_name="postgres"):
     Raises:
         Exception: If an error occurs while connecting to the PostgreSQL server or executing the query.
     """
+
+    # Initialize connection and cursor
+    conn = None
+    cursor = None
+
     try:
         conn = psycopg2.connect(
             host=server_name, user=user, password=password, dbname=db_name
@@ -50,12 +56,23 @@ def get_database_table_usage(server_name, user, password, db_name="postgres"):
         return table_usage
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        function_name = get_database_table_usage.__name__
+        error_message = f"An error occurred in {function_name}. The error is  {e}"
+        error_subject = f"Failure: {function_name}"
+        error_recipients = "name@example.com"
+        print(error_message)
+        try:
+            send_mail(error_subject, error_message, error_recipients)
+        except Exception as e:
+            print(f"Failed to send email notification: {e}")
+
         return []
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
 
 
 if __name__ == "__main__":
