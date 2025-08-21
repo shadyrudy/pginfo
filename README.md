@@ -36,3 +36,9 @@ Added script to send emails.
 Added try catch block with email notification on failure
 Added script to import index information including size and definition. 
 Moved cursor and connection definition outside of the try catch. 
+
+## 2025-08-21
+Added script to get index usage
+Added script to insert index usage to the main databases
+Fixed typos
+Updates to process server script

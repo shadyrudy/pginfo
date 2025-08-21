@@ -1,15 +1,15 @@
 import argparse
 import psycopg2
-from get_database_table_sizes import get_database_table_sizes
+from get_database_indexes import get_database_indexes
 from get_databases import get_databases
 from send_mail import send_mail
 
 
-def insert_database_table_sizes(
+def insert_database_index_sizes(
     target_server, target_username, target_password, dba_username, dba_password
 ):
     """
-    Inserts the sizes of tables in the target PostgreSQL server into the DBAAdmin database.
+    Inserts database index information into the DBAAdmin database.
 
     Args:
         target_server (str): Name of the target PostgreSQL server.
@@ -20,7 +20,6 @@ def insert_database_table_sizes(
 
     Raises:
         Exception: An error occurred while connecting to the DBA database.
-
     """
 
     # Initialize connection and cursor
@@ -32,10 +31,11 @@ def insert_database_table_sizes(
         # Get databases from the target server
         databases = get_databases(target_server, target_username, target_password)
 
-        # Foreach database, get tables and their usage
+        # Foreach database, get their index information
         for current_database in databases:
-            # Get tables and their usage from the target server for the current database
-            table_sizes = get_database_table_sizes(
+
+            # Get index information for the current database
+            database_indexes = get_database_indexes(
                 target_server, target_username, target_password, current_database
             )
 
@@ -48,32 +48,29 @@ def insert_database_table_sizes(
             )
             cursor_dba = conn_dba.cursor()
 
-            # Insert into dba.tables table
+            # Insert into dba.indexes table
             for (
                 database_name,
                 schema_name,
                 table_name,
-                table_size,
-                index_size,
-                total_size,
-                row_estimate,
-            ) in table_sizes:
+                index_name,
+                index_size_bytes,
+                index_definition,
+            ) in database_indexes:
                 cursor_dba.execute(
-                    "INSERT INTO dba.tables (server_name, database_name, schema_name, table_name, table_size_bytes, index_size_bytes, total_size_bytes, row_count, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                    "INSERT INTO dba.indexes (server_name, database_name, schema_name, table_name, index_name, index_size_bytes, index_definition, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
                     (
                         target_server,
                         database_name,
                         schema_name,
                         table_name,
-                        table_size,
-                        index_size,
-                        total_size,
-                        row_estimate,
+                        index_name,
+                        index_size_bytes,
+                        index_definition,
                     ),
                 )
-
     except Exception as e:
-        function_name = insert_database_table_sizes.__name__
+        function_name = insert_database_index_sizes.__name__
         error_message = f"An error occurred in {function_name}. The error is  {e}"
         error_subject = f"Failure: {function_name}"
         error_recipients = "name@example.com"
@@ -94,7 +91,7 @@ def insert_database_table_sizes(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Insert database table sizes information into the DBAAdmin database."
+        description="Insert database index information into the DBAAdmin database."
     )
     parser.add_argument("target_server", help="Name of the target PostgreSQL server")
     parser.add_argument(
@@ -108,7 +105,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    insert_database_table_sizes(
+    insert_database_index_sizes(
         args.target_server,
         args.target_username,
         args.target_password,

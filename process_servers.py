@@ -1,6 +1,8 @@
 from dotenv import dotenv_values
 import argparse
 from get_servers import get_servers
+from insert_database_index_sizes import insert_database_index_sizes
+from insert_database_index_usage import insert_database_index_usage
 from insert_database_sizes import insert_database_sizes
 from insert_database_table_sizes import insert_database_table_sizes
 from insert_database_table_usage import insert_database_table_usage
@@ -53,17 +55,27 @@ def process_servers(dba_username, dba_password):
             server, current_username, current_password, dba_username, dba_password
         )
 
+        # next, get index size for all databases on the server
+        insert_database_index_sizes(
+            server, current_username, current_password, dba_username, dba_password
+        )
+
+        # next, get index usage for all databases on the server
+        insert_database_index_usage(
+            server, current_username, current_password, dba_username, dba_password
+        )
+
         # Next, get all users on the server
         insert_database_users(
             server, current_username, current_password, dba_username, dba_password
         )
-        print(f"    Finished with server: {server}")
 
         # Next, get grants for all databases on the server
         insert_database_grants(
             server, current_username, current_password, dba_username, dba_password
         )
 
+        print(f"    Finished with server: {server}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
