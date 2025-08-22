@@ -29,16 +29,30 @@ def insert_database_sizes(
 
         # Connect to the DBA001 server
         conn_dba = psycopg2.connect(
-            host="DBA001", user=dba_username, password=dba_password, dbname="dbaadmin"
+            host="DBA001",
+            user=dba_username,
+            password=dba_password,
+            dbname="dbaadmin"
         )
         cursor_dba = conn_dba.cursor()
 
         # Insert into dba.database_sizes table
-        for db_name, size_mb, size_gb in databases:
+        for (
+                db_name,
+                size_mb,
+                size_gb
+        ) in databases:
             cursor_dba.execute(
                 "INSERT INTO dba.databases (server_name, database_name, database_size_bytes, database_size, last_updated) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
-                (target_server, db_name, size_mb, size_gb),
-            )
+                (
+                    target_server,
+                    db_name,
+                    size_mb,
+                    size_gb),
+                )
+
+        # Commit after processing all databases for this server
+        conn_dba.commit()
 
     except Exception as e:
         function_name = insert_database_sizes.__name__
@@ -51,14 +65,16 @@ def insert_database_sizes(
         except Exception as e:
             print(f"Failed to send email notification: {e}")
 
+        # Rollback the transaction if there was an error
+        if conn_dba is not None:
+            conn_dba.rollback()
+
     finally:
         # Commit changes and close connection
         if cursor_dba is not None:
             cursor_dba.close()
         if conn_dba is not None:
-            conn_dba.commit()
             conn_dba.close()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

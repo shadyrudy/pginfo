@@ -1,14 +1,15 @@
 import argparse
 import psycopg2
-from get_database_users import get_database_users
+from get_database_indexes import get_database_indexes
+from get_databases import get_databases
 from send_mail import send_mail
 
 
-def insert_database_users(
+def insert_database_index_sizes(
     target_server, target_username, target_password, dba_username, dba_password
 ):
     """
-    Inserts database users from the target PostgreSQL server into the DBAAdmin database.
+    Inserts database index information into the DBAAdmin database.
 
     Args:
         target_server (str): Name of the target PostgreSQL server.
@@ -16,6 +17,9 @@ def insert_database_users(
         target_password (str): Password for the target PostgreSQL server.
         dba_username (str): Username for the DBA PostgreSQL server.
         dba_password (str): Password for the DBA PostgreSQL server.
+
+    Raises:
+        Exception: An error occurred while connecting to the DBA database.
     """
 
     # Initialize connection and cursor
@@ -32,47 +36,43 @@ def insert_database_users(
         )
         cursor_dba = conn_dba.cursor()
 
-        # Get database users from the target server
-        database_users = get_database_users(
-            target_server, target_username, target_password
-        )
+        # Get databases from the target server
+        databases = get_databases(target_server, target_username, target_password)
 
-        # Insert into dba.users table
-        for (
-            rolname,
-            rolsuper,
-            rolinherit,
-            rolcreaterole,
-            rolcreatedb,
-            rolcanlogin,
-            rolreplication,
-            rolconnlimit,
-            rolvaliduntil,
-            memberof,
-            rolconfig,
-        ) in database_users:
-            cursor_dba.execute(
-                "INSERT INTO dba.users(server_name, rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin, rolreplication, rolconnlimit, rolvaliduntil, memberof, rolconfig) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )",
-                (
-                    target_server,
-                    rolname,
-                    rolsuper,
-                    rolinherit,
-                    rolcreaterole,
-                    rolcreatedb,
-                    rolcanlogin,
-                    rolreplication,
-                    rolconnlimit,
-                    rolvaliduntil,
-                    memberof,
-                    rolconfig,
-                ),
+        # Foreach database, get their index information
+        for current_database in databases:
+
+            # Get index information for the current database
+            database_indexes = get_database_indexes(
+                target_server, target_username, target_password, current_database
             )
+
+            # Insert into dba.indexes table
+            for (
+                database_name,
+                schema_name,
+                table_name,
+                index_name,
+                index_size_bytes,
+                index_definition,
+            ) in database_indexes:
+                cursor_dba.execute(
+                    "INSERT INTO dba.indexes (server_name, database_name, schema_name, table_name, index_name, index_size_bytes, index_definition, last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                    (
+                        target_server,
+                        database_name,
+                        schema_name,
+                        table_name,
+                        index_name,
+                        index_size_bytes,
+                        index_definition,
+                    ),
+                )
         # Commit after processing all databases for this server
         conn_dba.commit()
 
     except Exception as e:
-        function_name = insert_database_users.__name__
+        function_name = insert_database_index_sizes.__name__
         error_message = f"An error occurred in {function_name}. The error is  {e}"
         error_subject = f"Failure: {function_name}"
         error_recipients = "name@example.com"
@@ -93,10 +93,9 @@ def insert_database_users(
         if conn_dba is not None:
             conn_dba.close()
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Insert database users into the DBAAdmin database."
+        description="Insert database index size information into the DBAAdmin database."
     )
     parser.add_argument("target_server", help="Name of the target PostgreSQL server")
     parser.add_argument(
@@ -110,7 +109,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    insert_database_users(
+    insert_database_index_sizes(
         args.target_server,
         args.target_username,
         args.target_password,
