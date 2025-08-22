@@ -28,6 +28,14 @@ def insert_database_table_sizes(
     cursor_dba = None
 
     try:
+        # Connect to the DBA001 server
+        conn_dba = psycopg2.connect(
+            host="DBA001",
+            user=dba_username,
+            password=dba_password,
+            dbname="dbaadmin",
+        )
+        cursor_dba = conn_dba.cursor()
 
         # Get databases from the target server
         databases = get_databases(target_server, target_username, target_password)
@@ -38,15 +46,6 @@ def insert_database_table_sizes(
             table_sizes = get_database_table_sizes(
                 target_server, target_username, target_password, current_database
             )
-
-            # Connect to the DBA001 server
-            conn_dba = psycopg2.connect(
-                host="DBA001",
-                user=dba_username,
-                password=dba_password,
-                dbname="dbaadmin",
-            )
-            cursor_dba = conn_dba.cursor()
 
             # Insert into dba.tables table
             for (
@@ -72,6 +71,10 @@ def insert_database_table_sizes(
                     ),
                 )
 
+        # Commit after processing all databases for this server
+        conn_dba.commit()
+        print(f"Successfully inserted data for all databases on server {target_server}")
+
     except Exception as e:
         function_name = insert_database_table_sizes.__name__
         error_message = f"An error occurred in {function_name}. The error is  {e}"
@@ -83,14 +86,16 @@ def insert_database_table_sizes(
         except Exception as e:
             print(f"Failed to send email notification: {e}")
 
+        # Rollback the transaction if there was an error
+        if conn_dba is not None:
+            conn_dba.rollback()
+
     finally:
-        # Commit changes and close connection
+        # Close connection
         if cursor_dba is not None:
             cursor_dba.close()
         if conn_dba is not None:
-            conn_dba.commit()
             conn_dba.close()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -23,12 +23,6 @@ def insert_database_users(
     cursor_dba = None
 
     try:
-
-        # Get database users from the target server
-        database_users = get_database_users(
-            target_server, target_username, target_password
-        )
-
         # Connect to the DBA001 server
         conn_dba = psycopg2.connect(
             host="DBA001",
@@ -38,7 +32,12 @@ def insert_database_users(
         )
         cursor_dba = conn_dba.cursor()
 
-        # Insert into dba.database_sizes table
+        # Get database users from the target server
+        database_users = get_database_users(
+            target_server, target_username, target_password
+        )
+
+        # Insert into dba.users table
         for (
             rolname,
             rolsuper,
@@ -69,6 +68,8 @@ def insert_database_users(
                     rolconfig,
                 ),
             )
+        # Commit after processing all databases for this server
+        conn_dba.commit()
 
     except Exception as e:
         function_name = insert_database_users.__name__
@@ -81,12 +82,15 @@ def insert_database_users(
         except Exception as e:
             print(f"Failed to send email notification: {e}")
 
+        # Rollback the transaction if there was an error
+        if conn_dba is not None:
+            conn_dba.rollback()
+
     finally:
         # Commit changes and close connection
         if cursor_dba is not None:
             cursor_dba.close()
         if conn_dba is not None:
-            conn_dba.commit()
             conn_dba.close()
 
 

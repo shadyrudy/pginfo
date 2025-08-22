@@ -27,6 +27,14 @@ def insert_database_index_usage(
     cursor_dba = None
 
     try:
+        # Connect to the DBA001 server
+        conn_dba = psycopg2.connect(
+            host="DBA001",
+            user=dba_username,
+            password=dba_password,
+            dbname="dbaadmin",
+        )
+        cursor_dba = conn_dba.cursor()
 
         # Get databases from the target server
         databases = get_databases(target_server, target_username, target_password)
@@ -37,15 +45,6 @@ def insert_database_index_usage(
             index_usage = get_database_index_usage(
                 target_server, target_username, target_password, current_database
             )
-
-            # Connect to the DBA001 server
-            conn_dba = psycopg2.connect(
-                host="DBA001",
-                user=dba_username,
-                password=dba_password,
-                dbname="dbaadmin",
-            )
-            cursor_dba = conn_dba.cursor()
 
             # Insert into dba.index_usage table
             for (
@@ -70,6 +69,10 @@ def insert_database_index_usage(
                         index_tuples_fetched
                     ),
                 )
+
+        # Commit after processing all databases for this server
+        conn_dba.commit()
+
     except Exception as e:
         function_name = insert_database_index_usage.__name__
         error_message = f"An error occurred in {function_name}. The error is  {e}"
@@ -81,18 +84,20 @@ def insert_database_index_usage(
         except Exception as e:
             print(f"Failed to send email notification: {e}")
 
+        # Rollback the transaction if there was an error
+        if conn_dba is not None:
+            conn_dba.rollback()
+
     finally:
         # Commit changes and close connection
         if cursor_dba is not None:
             cursor_dba.close()
         if conn_dba is not None:
-            conn_dba.commit()
             conn_dba.close()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Insert database sizes information into the DBAAdmin database."
+        description="Insert database index usage information into the DBAAdmin database."
     )
     parser.add_argument("target_server", help="Name of the target PostgreSQL server")
     parser.add_argument(
